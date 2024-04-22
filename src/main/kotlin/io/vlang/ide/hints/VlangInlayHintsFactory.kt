@@ -16,31 +16,31 @@ class VlangInlayHintsFactory(
     private val editor: Editor,
     private val factory: PresentationFactory,
 ) {
-    private val textMetricsStorage =
-        PresentationFactory::class.memberProperties
-            .find { it.name == "textMetricsStorage" }
-            ?.getter
-            ?.let {
-                it.isAccessible = true
-                it
-            }
-            ?.call(factory) as? InlayTextMetricsStorage
+//    private val textMetricsStorage =
+//        PresentationFactory::class.memberProperties
+//            .find { it.name == "textMetricsStorage" }
+//            ?.getter
+//            ?.let {
+//                it.isAccessible = true
+//                it
+//            }
+//            ?.call(factory) as? InlayTextMetricsStorage
 
-    private val offsetFromTopProvider = object : InsetValueProvider {
-        override val top = (textMetricsStorage?.getFontMetrics(false)?.offsetFromTop() ?: 1) - 1
-    }
+//    private val offsetFromTopProvider = object : InsetValueProvider {
+//        override val top = (textMetricsStorage?.getFontMetrics(false)?.offsetFromTop() ?: 1) - 1
+//    }
 
     fun implicitErrorVariable(project: Project): InlayPresentation {
         val text = factory.psiSingleReference(text("err")) {
             VlangLangUtil.getErrVariableDefinition(project)
         }
 
-        return container(factory.seq(text, text(" →")))
+        return factory.roundWithBackground(factory.seq(text, text(" →")))
     }
 
-    fun enumValue(value: String): InlayPresentation = container(text(" = $value"))
+    fun enumValue(value: String): InlayPresentation = factory.roundWithBackground(text(" = $value"))
 
-    fun typeHint(type: VlangTypeEx, anchor: PsiElement): InlayPresentation = container(
+    fun typeHint(type: VlangTypeEx, anchor: PsiElement): InlayPresentation = factory.roundWithBackground(
         listOf(text(": "), hint(type, 1, anchor)).join()
     )
 
@@ -131,45 +131,49 @@ class VlangInlayHintsFactory(
         kinds.map { hint(it, level, anchor) }.join(", ")
 
     fun rangeHint(inclusive: Boolean): InlayPresentation {
+        factory
         return withInlayAttributes(
-            smallContainer(factory.smallText(if (inclusive) "≤" else "<")),
+            factory.roundWithBackgroundAndSmallInset(factory.smallText(if (inclusive) "≤" else "<")),
             DefaultLanguageHighlighterColors.INLINE_PARAMETER_HINT
         )
     }
 
-    private fun smallContainer(base: InlayPresentation): InlayPresentation {
-        val rounding = withInlayAttributes(
-            RoundWithBackgroundPresentation(
-                InsetPresentation(
-                    base,
-                    left = 4,
-                    right = 4,
-                    top = 0,
-                    down = 0,
-                ),
-                8,
-                8
-            ), DefaultLanguageHighlighterColors.INLAY_DEFAULT
-        )
-        return DynamicInsetPresentation(rounding, offsetFromTopProvider)
-    }
+//// Same as factory.roundWithBackgroundAndSmallInset() ???
+//    private fun smallContainer(base: InlayPresentation): InlayPresentation {
+//        val rounding = withInlayAttributes(
+//            RoundWithBackgroundPresentation(
+//                InsetPresentation(
+//                    base,
+//                    left = 4,
+//                    right = 4,
+//                    top = 0,
+//                    down = 0,
+//                ),
+//                8,
+//                8
+//            ), DefaultLanguageHighlighterColors.INLAY_DEFAULT
+//        )
+//        return DynamicInsetPresentation(rounding, offsetFromTopProvider)
+//    }
 
-    private fun container(base: InlayPresentation): InlayPresentation {
-        val rounding = withInlayAttributes(
-            RoundWithBackgroundPresentation(
-                InsetPresentation(
-                    base,
-                    left = 7,
-                    right = 7,
-                    top = 2,
-                    down = 1,
-                ),
-                8,
-                8
-            ), DefaultLanguageHighlighterColors.INLAY_DEFAULT
-        )
-        return DynamicInsetPresentation(rounding, offsetFromTopProvider)
-    }
+//    // factory.roundWithBackground()
+//    // only top, down offsets differ
+//    private fun container(base: InlayPresentation): InlayPresentation {
+//        val rounding = withInlayAttributes(
+//            RoundWithBackgroundPresentation(
+//                InsetPresentation(
+//                    base,
+//                    left = 7,
+//                    right = 7,
+//                    top = 2,
+//                    down = 1,
+//                ),
+//                8,
+//                8
+//            ), DefaultLanguageHighlighterColors.INLAY_DEFAULT
+//        )
+//        return DynamicInsetPresentation(rounding, offsetFromTopProvider)
+//    }
 
     private fun List<InlayPresentation>.join(separator: String = ""): InlayPresentation {
         if (separator.isEmpty()) {

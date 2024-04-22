@@ -5,7 +5,6 @@ import com.intellij.ide.util.projectWizard.ModuleBuilderListener
 import com.intellij.ide.util.projectWizard.ModuleWizardStep
 import com.intellij.ide.util.projectWizard.WizardContext
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.invokeLater
 import com.intellij.openapi.application.runWriteAction
@@ -13,7 +12,6 @@ import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.module.Module
 import com.intellij.openapi.module.ModuleType
 import com.intellij.openapi.roots.ModifiableRootModel
-import com.intellij.openapi.startup.StartupManager
 import com.intellij.openapi.vfs.VirtualFile
 import io.vlang.configurations.VlangProjectSettingsForm
 import io.vlang.ide.ui.VIcons
@@ -57,7 +55,7 @@ class VlangModuleBuilder : ModuleBuilder(), ModuleBuilderListener {
             baseDir: VirtualFile,
             toolchainLocation: String,
         ) {
-            invokeLater {
+            invokeLater(ModalityState.nonModal()) {
                 runWriteAction {
                     try {
                         val filesToOpen = VlangProjectTemplate()
@@ -81,32 +79,32 @@ class VlangModuleBuilder : ModuleBuilder(), ModuleBuilderListener {
         }
 
         private fun scheduleFilesOpening(module: Module, files: Collection<VirtualFile>) {
-            runWhenNonModalIfModuleNotDisposed(module) {
+//            runWhenNonModalIfModuleNotDisposed(module) {
                 val manager = FileEditorManager.getInstance(module.project)
                 files.forEach { file ->
                     manager.openFile(file, true)
                 }
-            }
+//            }
         }
 
-        private fun runWhenNonModalIfModuleNotDisposed(module: Module, runnable: Runnable) {
-            // runnable must not be executed immediately because the new project model might be not yet committed, so V Toolchain won't be found
-            // In WebStorm we get already initialized project at this point, but in IntelliJ IDEA - not yet initialized.
-            if (module.project.isInitialized) {
-                ApplicationManager.getApplication().invokeLater(runnable, ModalityState.NON_MODAL, module.disposed)
-                return
-            }
-
-            StartupManager.getInstance(module.project).runAfterOpened {
-                if (ApplicationManager.getApplication().currentModalityState === ModalityState.NON_MODAL) {
-                    runnable.run()
-                } else {
-                    ApplicationManager.getApplication()
-                        .invokeLater(runnable, ModalityState.NON_MODAL) {
-                            module.isDisposed
-                        }
-                }
-            }
-        }
+//        private fun runWhenNonModalIfModuleNotDisposed(module: Module, runnable: Runnable) {
+//            // runnable must not be executed immediately because the new project model might be not yet committed, so V Toolchain won't be found
+//            // In WebStorm we get already initialized project at this point, but in IntelliJ IDEA - not yet initialized.
+//            if (module.project.isInitialized) {
+//                ApplicationManager.getApplication().invokeLater(runnable, ModalityState.nonModal(), module.disposed)
+//                return
+//            }
+//
+//            StartupManager.getInstance(module.project).runAfterOpened {
+//                if (ModalityState.current() === ModalityState.nonModal()) {
+//                    runnable.run()
+//                } else {
+//                    ApplicationManager.getApplication()
+//                        .invokeLater(runnable, ModalityState.nonModal()) {
+//                            module.isDisposed
+//                        }
+//                }
+//            }
+//        }
     }
 }

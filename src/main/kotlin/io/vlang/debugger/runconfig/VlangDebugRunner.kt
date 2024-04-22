@@ -1,21 +1,17 @@
 package io.vlang.debugger.runconfig
 
-import com.intellij.execution.ExecutionManager
 import com.intellij.execution.configurations.*
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.execution.runners.ExecutionEnvironment
 import com.intellij.execution.runners.ProgramRunner
 import com.intellij.execution.ui.RunContentDescriptor
-import com.intellij.util.PlatformUtils
 import com.intellij.util.execution.ParametersListUtil
-import org.jetbrains.concurrency.resolvedPromise
 import io.vlang.ide.run.VlangBuildTaskRunner
 import io.vlang.ide.run.VlangRunConfigurationRunState
 import io.vlang.ide.test.configuration.VlangTestConfiguration
 import java.io.File
-import java.util.concurrent.ExecutionException
 
-@Suppress("UnstableApiUsage", "DEPRECATION")
+
 open class VlangDebugRunner : ProgramRunner<RunnerSettings> {
     override fun getRunnerId() = RUNNER_ID
 
@@ -29,15 +25,18 @@ open class VlangDebugRunner : ProgramRunner<RunnerSettings> {
 
     override fun execute(environment: ExecutionEnvironment) {
         val state = environment.state ?: return
-        @Suppress("UnstableApiUsage")
-        ExecutionManager.getInstance(environment.project).startRunProfile(environment) {
-            resolvedPromise(doExecute(state, environment))
-        }
+//        @Suppress("UnstableApiUsage")
+//        ExecutionManager.getInstance(environment.project).startRunProfile(environment) {
+//            resolvedPromise(doExecute(state, environment))
+//        }
+        doExecute(state, environment)
     }
 
     private fun doExecute(state: RunProfileState, environment: ExecutionEnvironment): RunContentDescriptor? {
         if (state !is VlangRunConfigurationRunState) return null
-        assertAvailability()
+        // TODO: Since assertAvailability uses internal API we cannot check if debugger is supported.
+        //       Maybe checking for existence of a given class cloud help ?
+        //assertAvailability()
 
         val conf = state.conf
         val workingDir = conf.workingDir
@@ -74,19 +73,19 @@ open class VlangDebugRunner : ProgramRunner<RunnerSettings> {
         runExecutable: GeneralCommandLine,
     ): RunContentDescriptor = VlangDebugRunnerUtils.showRunContent(environment, runExecutable)
 
-    private fun assertAvailability() {
-        if (!PlatformUtils.isIdeaUltimate() &&
-            !PlatformUtils.isCidr() &&
-            !PlatformUtils.isPyCharmPro() &&
-            !PlatformUtils.isGoIde() &&
-            !PlatformUtils.isRubyMine() &&
-            !PlatformUtils.isRider()
-        ) {
-            throw ExecutionException(
-                "Debugging is currently supported in IntelliJ IDEA Ultimate, PyCharm Professional, CLion, GoLand, RubyMine and Rider.", null
-            )
-        }
-    }
+//    private fun assertAvailability() {
+//        if (!PlatformUtils.isIdeaUltimate() &&
+//            !PlatformUtils.isCidr() &&
+//            !PlatformUtils.isPyCharmPro() &&
+//            !PlatformUtils.isGoIde() &&
+//            !PlatformUtils.isRubyMine() &&
+//            !PlatformUtils.isRider()
+//        ) {
+//            throw ExecutionException(
+//                "Debugging is currently supported in IntelliJ IDEA Ultimate, PyCharm Professional, CLion, GoLand, RubyMine and Rider.", null
+//            )
+//        }
+//    }
 
     companion object {
         const val RUNNER_ID: String = "VlangDebugRunner"
